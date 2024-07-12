@@ -522,8 +522,6 @@ def synthetic_experiments(reg=0.001, mu=0, lm=True, dir_name='test', mode='gauss
         test[1,:] = laplace(200, 140, 4)
     elif mode == 'salinas': 
         vals  =  random.sample(range(0, 7138), 2)
-       #vals = [4935, 5850]
-        vals = [1046, 5850]
         data = data_loader('data')
         test[0,:] = data[vals[0],:]
         test[1,:] = data[vals[1],:]
@@ -1106,82 +1104,6 @@ def virid_modify():
     new_cmap = mcolors.ListedColormap(cmap.colors)
     new_cmap.colors[0] = (1, 1, 1, 1)
     return new_cmap
-
-def svm_testing(num_points=200, mode='raw'):
-    data = data_loader('data')
-    all_data = np.zeros((7138, 201)) #12 
-    label = np.zeros(7138)
-
-    gt = data_loader('gt')
-    for i in range(0, gt.shape[0]):
-        if gt[i] != 0: 
-        #if gt[i] == 10 or gt[i] == 12: 
-            all_data[i,:] = data[i,:]
-            label[i] = gt[i]
-    label_data = all_data[~np.all(all_data == 0, axis=1)]
-    random_integers = [random.randint(0, label_data.shape[0] - 1) for i in range(num_points)]
-    label = label[label != 0]
-    training_labels = label.copy()
-    training_labels = training_labels[random_integers]
-    normal_data = label_data.copy()
-    k = len(label)
-    if mode != 'raw':
-        for i in range(0, k): 
-            if np.sum(normal_data[i,:]) != 0: 
-                normal_data[i,:] /= np.sum(normal_data[i,:])
-
-    true_train = normal_data[random_integers]
-    clf = make_pipeline(StandardScaler(), SVC(gamma='auto'))
-    clf.fit(true_train, training_labels)
-    acc = 0
-    for i in range(0, k): 
-        x =  clf.predict([normal_data[i,:]])[0]
-        if x == label[i]:
-            acc += 1
-    print('acc: ', num_points, (acc - len(random_integers))/(k - len(random_integers)))
-    return (acc - len(random_integers))/(k - len(random_integers))
-
-def nn_testing(num_points=100, neighbors=10, type='raw'): 
-    data = data_loader('data')
-    all_data = np.zeros((7138, 201)) #12 
-    label = np.zeros(7138)
-
-    gt = data_loader('gt')
-    for i in range(0, gt.shape[0]):
-        if gt[i] != 0: 
-            all_data[i,:] = data[i,:]
-            label[i] = gt[i]
-    label_data = all_data[~np.all(all_data == 0, axis=1)]
-    label = label[label != 0]
-    random_integers = random.sample(range(0, label_data.shape[0] - 1), num_points)
-    training_labels = label.copy()
-    training_labels = training_labels[random_integers]
-
-    normal_data = label_data.copy()
-    k = len(label)
-    if type != 'raw':
-        for i in range(0, k): 
-            if np.sum(normal_data[i,:]) != 0: 
-                normal_data[i,:] /= np.sum(normal_data[i,:])
-
-    true_train = normal_data[random_integers]
-
-    nbrs = NearestNeighbors(n_neighbors=neighbors).fit(true_train)
-    distances, indices = nbrs.kneighbors(normal_data)
-    index_map = indices.copy()
-    for i in range(indices.shape[0]):
-        for j in range(indices.shape[1]): 
-            index_map[i, j] = label[random_integers[indices[i,j]]]
-    mode_eval = np.zeros(indices.shape[0])
-    for i in range(0, mode_eval.shape[0]): 
-        mode_eval[i] = mode(index_map[i,:])
-
-    acc = 0
-    for i in range(mode_eval.shape[0]): 
-        if mode_eval[i] == label[i]: 
-            acc += 1
-    print('acc: ', acc/mode_eval.shape[0])
-    return acc/mode_eval.shape[0]
 
 
 if __name__ == "__main__":
