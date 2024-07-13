@@ -147,7 +147,7 @@ def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_
     plt.savefig(save_name + '/2_post_inpaint_n_clusters=' + str(num_clusters) + '_n_points='
                 + str(n_points) + '_acc=' + paint_display + '.pdf', bbox_inches='tight')
     plt.clf()
-    return paint_acc
+    return (acc, paint_acc)
 
 
 #Carries out 1d algorithm but just on mass
