@@ -66,6 +66,12 @@ def wadal(embed, n_clusters, n_points, idx, gt_data):
     return labels
 
 #Control loop for WADAL, algorithm carried out in wadal()
+#Input: 
+#num_clusters: number of clusters
+#n_points: # of points per cluster
+#tsne: Just keep as true always
+#dir_name: Directory name of data
+#save_name: Directory name for saving
 def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_1',
                   save_name='whisper_test'):
     #Generic mapping for coloring
@@ -73,6 +79,7 @@ def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_
 
     (gt_data, mask) = helper.gt_and_mask(remap)
 
+    #Loads in data 
     X = torch.load(dir_name + '/coeff.pt').numpy() #Learned coefficients
     idx = torch.load(dir_name + '/train_index.pt').numpy()
 
@@ -84,7 +91,6 @@ def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_
         mass[i] = np.sum(data[idx[i],:])
     mass = np.reshape(mass, (1, data_size))
     X = np.append(X.T, mass.reshape(-1, 1), axis=1)
-    #X = X.T
     for i in range(X.shape[0]):
         X[i,:] /= np.sum(X[i,:])
 
@@ -93,6 +99,7 @@ def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_
     new_cmap = mcolors.ListedColormap(cmap.colors)
     new_cmap.colors[0] = (1, 0, 0, 1)
 
+    #Gets TSNE embedding 
     embed = TSNE(n_components=2, learning_rate='auto', init='random', 
             perplexity=25).fit_transform(X)
     if tsne:
@@ -143,7 +150,6 @@ def wadal_control(num_clusters=20, n_points=5, tsne=True, dir_name='Random_data_
     paint_display = str(round(paint_acc, 3))
     print('Post inpainting and relabeling accuracy: ', paint_display)
     plt.imshow(relabel2, cmap=helper.virid_modify())
-    #plt.title('Post inpainting/relabeling=' + paint_display)
     plt.savefig(save_name + '/2_post_inpaint_n_clusters=' + str(num_clusters) + '_n_points='
                 + str(n_points) + '_acc=' + paint_display + '.pdf', bbox_inches='tight')
     plt.clf()
@@ -155,21 +161,25 @@ def mass_cluster():
     remap = {0: 0, 1: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 6}
     dir_name = 'Random_data_1'
 
+    #Loads in data 
     (gt_data, mask) = helper.gt_and_mask(remap)
-
     idx = torch.load(dir_name + '/train_index.pt').numpy()
     save_name = 'testing'
-
     data_size = idx.shape[0]
     data = helper.data_loader('data')
     mass = np.zeros(data_size)
 
+    #Builds the 1d mass
     for i in range(data_size): 
         mass[i] = np.sum(data[idx[i],:])
     mass = np.reshape(mass, (1, data_size))
+    
+    #Gets embedding and runs algorithm
     embed = TSNE(n_components=2, learning_rate='auto', init='random', 
         perplexity=25).fit_transform(mass.T)
     labels = wadal(embed, 8, 1, idx, gt_data)
+
+    #Accuracy
     acc = 0
     zero_count = 0
     train_plot = np.zeros(83*86)
